@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="description" content="NIKEスニーカーの発売日・抽選・相場をまとめて管理するアプリ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>SNEAKER TRACKER</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0b0c;--panel:#171719;--line:#2a2a2e;--muted:#a1a1aa;--white:#f7f7f7;--accent:#d9ff42}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--white);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:5;background:#111e;border-bottom:1px solid var(--line);backdrop-filter:blur(12px);padding:15px max(18px,calc((100vw - 1080px)/2))}
+.brand{font-weight:900;letter-spacing:.13em;font-size:18px}.sub{color:var(--muted);font-size:11px;letter-spacing:.12em}
+main{max-width:1080px;margin:auto;padding:22px 18px 70px}.hero{background:linear-gradient(130deg,#222 0%,#111 70%);border:1px solid #333;border-radius:22px;padding:25px;margin-bottom:18px}
+h1{font-size:clamp(27px,5vw,42px);line-height:1.08;margin:8px 0}.hero p{color:#bbb;margin:8px 0 0}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}.stat,.panel,.shoe{background:var(--panel);border:1px solid var(--line);border-radius:16px}.stat{padding:13px}.stat strong{display:block;font-size:24px}.stat span{font-size:11px;color:var(--muted)}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin:17px 0}.toolbar input{flex:1;min-width:180px}
+input,select,button{font:inherit;border-radius:11px;border:1px solid #3a3a40;background:#202024;color:var(--white);padding:11px 12px}
+button{cursor:pointer;font-weight:650}button.primary{background:var(--accent);color:#111;border-color:var(--accent)}button.ghost{background:transparent}
+.tabs{display:flex;gap:7px;overflow:auto;margin:14px 0}.tabs button.active{background:#eee;color:#111}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}.shoe{padding:15px;display:flex;flex-direction:column;gap:9px}
+.shoe h3{font-size:16px;margin:0}.shoe .meta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
+.pill{display:inline-flex;align-self:flex-start;padding:4px 8px;border-radius:30px;background:#303036;color:#ddd;font-size:11px}.pill.green{background:#253019;color:#d9ff42}
+.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:auto}.actions button{font-size:12px;padding:8px 10px}
+.panel{padding:17px;margin:18px 0}.panel h2{font-size:17px;margin:0 0 12px}.formgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;color:var(--muted)}.field.full{grid-column:1/-1}
+.note{font-size:12px;color:var(--muted);line-height:1.6}.empty{padding:35px 15px;text-align:center;color:var(--muted);border:1px dashed #444;border-radius:15px}
+footer{color:var(--muted);font-size:11px;margin-top:25px}
+a{color:var(--accent)}.hidden{display:none!important}
+@media(max-width:560px){main{padding:15px 13px 50px}.stats{gap:7px}.stat{padding:10px}.stat strong{font-size:20px}.formgrid{grid-template-columns:1fr}.field.full{grid-column:auto}.hero{padding:20px}}
+</style>
+</head>
+<body>
+<header><div class="brand">SNEAKER TRACKER</div><div class="sub">NIKE RELEASE & RAFFLE DATABASE</div></header>
+<main>
+<section class="hero"><div class="sub">YOUR NIKE RELEASE HUB</div><h1>DROP WATCH.<br>DON'T MISS OUT.</h1><p>発売日・抽選締切・参考相場をひとまとめに。</p></section>
+<div class="stats">
+ <div class="stat"><strong id="count">0</strong><span>登録モデル</span></div>
+ <div class="stat"><strong id="raffles">0</strong><span>抽選締切あり</span></div>
+ <div class="stat"><strong id="favorites">0</strong><span>お気に入り</span></div>
+</div>
+<div class="toolbar">
+ <input id="search" placeholder="モデル名で検索…" aria-label="モデル名で検索">
+ <select id="sort" aria-label="並び替え"><option value="date">発売日が近い順</option><option value="name">名前順</option><option value="price">相場が高い順</option></select>
+</div>
+<div class="tabs">
+ <button class="active" data-filter="all">すべて</button><button data-filter="upcoming">発売予定</button><button data-filter="raffle">抽選締切あり</button><button data-filter="favorites">お気に入り</button>
+</div>
+<div id="list" class="grid"></div>
+
+<section class="panel">
+ <h2>＋ スニーカー情報を追加</h2>
+ <form id="addForm" class="formgrid">
+  <div class="field full"><label for="name">モデル名 *</label><input id="name" required placeholder="例：AIR JORDAN 1 RETRO HIGH OG"></div>
+  <div class="field"><label for="release">発売日</label><input id="release" type="date"></div>
+  <div class="field"><label for="deadline">抽選締切日</label><input id="deadline" type="date"></div>
+  <div class="field"><label for="retail">定価（円）</label><input id="retail" type="number" min="0" placeholder="例：23100"></div>
+  <div class="field"><label for="market">参考相場（円）</label><input id="market" type="number" min="0" placeholder="確認した価格"></div>
+  <div class="field full"><label for="raffleUrl">抽選・販売ページURL</label><input id="raffleUrl" type="url" placeholder="https://..."></div>
+  <div class="field full"><label for="source">情報メモ・出典</label><input id="source" placeholder="例：NIKE公式 / atmos"></div>
+  <div class="field full"><button class="primary" type="submit">この情報を登録</button></div>
+ </form>
+</section>
+
+<section class="panel">
+ <h2>公式・販売サイト</h2>
+ <div class="actions">
+  <a href="https://www.nike.com/jp/launch" target="_blank" rel="noopener">NIKE SNKRS ↗</a>
+  <a href="https://www.atmos-tokyo.com/" target="_blank" rel="noopener">atmos ↗</a>
+  <a href="https://www.abc-mart.net/shop/" target="_blank" rel="noopener">ABC-MART ↗</a>
+  <a href="https://stockx.com/ja-jp" target="_blank" rel="noopener">StockX 相場 ↗</a>
+ </div>
+</section>
+<section class="panel">
+ <h2>通知・データ管理</h2>
+ <div class="actions">
+  <button id="notify" class="primary">締切通知を許可</button>
+  <button id="export" class="ghost">データを書き出す</button>
+  <label class="ghost" style="padding:9px 10px;border:1px solid #3a3a40;border-radius:11px;cursor:pointer;font-size:12px">データを読み込む<input id="import" type="file" accept="application/json" hidden></label>
+ </div>
+ <p class="note">締切通知は、このアプリをブラウザで開いている間に確認します。ブラウザを閉じている間の確実な通知には、サーバー側の定期実行とプッシュ通知設定が必要です。</p>
+</section>
+<section class="panel">
+ <h2>自動更新について</h2>
+ <p class="note">この版はインストール可能なWebアプリの土台です。NIKEの一般公開された公式フィード/APIを確認できていないため、発売情報を勝手に取得したように見せることはしていません。公式サイトへのリンクと、情報の手動登録・更新に対応しています。自動収集を有効にするには、利用可能なデータ提供元または運用するサーバーとの接続が必要です。</p>
+</section>
+<footer>データはこのブラウザ内に保存されます。別の端末と同期するにはクラウドDBの接続が必要です。発売・抽選情報は必ず販売元で再確認してください。</footer>
+</main>
+<script>
+const KEY='sneaker-tracker-v1';
+let shoes=JSON.parse(localStorage.getItem(KEY)||'[]');
+let filter='all';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function save(){localStorage.setItem(KEY,JSON.stringify(shoes));render()}
+function render(){
+ const q=$('search').value.toLowerCase();
+ let arr=shoes.filter(x=>(x.name||'').toLowerCase().includes(q));
+ if(filter==='upcoming')arr=arr.filter(x=>x.release && x.release>=new Date().toISOString().slice(0,10));
+ if(filter==='raffle')arr=arr.filter(x=>x.deadline);
+ if(filter==='favorites')arr=arr.filter(x=>x.favorite);
+ const sort=$('sort').value;
+ arr.sort((a,b)=>sort==='name'?a.name.localeCompare(b.name):sort==='price'?(Number(b.market)||0)-(Number(a.market)||0):(a.release||'9999').localeCompare(b.release||'9999'));
+ $('count').textContent=shoes.length;$('raffles').textContent=shoes.filter(x=>x.deadline).length;$('favorites').textContent=shoes.filter(x=>x.favorite).length;
+ $('list').innerHTML=arr.length?arr.map(x=>`<article class="shoe">
+  <span class="pill ${x.release?'green':''}">${x.release?`発売 ${esc(x.release)}`:'発売日未確認'}</span>
+  <h3>${esc(x.name)}</h3>
+  <div class="meta"><span>抽選締切</span><b>${esc(x.deadline||'未登録')}</b></div>
+  <div class="meta"><span>定価</span><b>${x.retail?'¥'+Number(x.retail).toLocaleString('ja-JP'):'未登録'}</b></div>
+  <div class="meta"><span>参考相場</span><b>${x.market?'¥'+Number(x.market).toLocaleString('ja-JP'):'未確認'}</b></div>
+  ${x.source?`<div class="note">出典：${esc(x.source)}</div>`:''}
+  <div class="actions">${x.raffleUrl?`<a href="${esc(x.raffleUrl)}" target="_blank" rel="noopener">応募・販売ページ ↗</a>`:''}
+  <button class="ghost" onclick="toggleFav('${x.id}')">${x.favorite?'★ お気に入り済み':'☆ お気に入り'}</button>
+  <button class="ghost" onclick="removeShoe('${x.id}')">削除</button></div>
+ </article>`).join(''):'<div class="empty">該当するスニーカーはありません。<br>上のフォームから登録できます。</div>';
+}
+window.toggleFav=id=>{shoes=shoes.map(x=>x.id===id?{...x,favorite:!x.favorite}:x);save()};
+window.removeShoe=id=>{if(confirm('この登録を削除しますか？')){shoes=shoes.filter(x=>x.id!==id);save()}};
+$('addForm').addEventListener('submit',e=>{e.preventDefault();shoes.push({id:crypto.randomUUID(),name:$('name').value.trim(),release:$('release').value,deadline:$('deadline').value,retail:$('retail').value,market:$('market').value,raffleUrl:$('raffleUrl').value,source:$('source').value,favorite:false});e.target.reset();save()});
+$('search').addEventListener('input',render);$('sort').addEventListener('change',render);
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));render()}));
+$('notify').addEventListener('click',async()=>{if(!('Notification'in window)){alert('このブラウザは通知に対応していません');return}const p=await Notification.requestPermission();alert(p==='granted'?'通知を許可しました。アプリを開いている間、締切を確認します。':'通知は許可されませんでした。')});
+function checkDeadlines(){if(!('Notification'in window)||Notification.permission!=='granted')return;const today=new Date();today.setHours(0,0,0,0);shoes.forEach(x=>{if(!x.deadline)return;const d=new Date(x.deadline+'T00:00:00');const diff=Math.round((d-today)/86400000);const key='notified-'+x.id+'-'+x.deadline;if(diff>=0&&diff<=1&&!sessionStorage.getItem(key)){new Notification('抽選締切のお知らせ',{body:`${x.name} の締切は ${x.deadline} です。`});sessionStorage.setItem(key,'1')}})}
+$('export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(shoes,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sneaker-tracker-data.json';a.click();URL.revokeObjectURL(a.href)});
+$('import').addEventListener('change',async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data))throw Error();shoes=data;save();alert('読み込みました')}catch{alert('JSONデータを読み込めませんでした')}});
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+render();checkDeadlines();setInterval(checkDeadlines,60000);
+</script>
+</body></html>
