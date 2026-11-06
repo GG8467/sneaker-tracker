@@ -49,6 +49,12 @@ a{color:var(--accent)}.hidden{display:none!important}
 </div>
 <div id="list" class="grid"></div>
 
+<section class="panel" id="autoFeed">
+ <h2>自動取得したNIKE発売・抽選ニュース</h2>
+ <p class="note">公開ニュースを定期収集。発売日や抽選受付を確定した一覧ではありません。必ずリンク先の公式販売店で確認してください。</p>
+ <div class="actions"><button id="refreshFeed" class="ghost" type="button">最新データを読み込む</button><span id="feedUpdated" class="note"></span></div>
+ <div id="feedList" class="grid" style="margin-top:12px"><div class="empty">読み込み中…</div></div>
+</section>
 <section class="panel">
  <h2>＋ スニーカー情報を追加</h2>
  <form id="addForm" class="formgrid">
@@ -83,7 +89,7 @@ a{color:var(--accent)}.hidden{display:none!important}
 </section>
 <section class="panel">
  <h2>自動更新について</h2>
- <p class="note">この版はインストール可能なWebアプリの土台です。NIKEの一般公開された公式フィード/APIを確認できていないため、発売情報を勝手に取得したように見せることはしていません。公式サイトへのリンクと、情報の手動登録・更新に対応しています。自動収集を有効にするには、利用可能なデータ提供元または運用するサーバーとの接続が必要です。</p>
+ <p class="note">GitHub Actionsで公開ニュースの見出し・リンクを定期収集できます（設定後）。NIKE公式の発売日や抽選締切の確定データを自動取得する機能ではありません。抽選申込、相場自動取得、閉じた状態の通知は未対応です。</p>
 </section>
 <footer>データはこのブラウザ内に保存されます。別の端末と同期するにはクラウドDBの接続が必要です。発売・抽選情報は必ず販売元で再確認してください。</footer>
 </main>
@@ -125,6 +131,16 @@ function checkDeadlines(){if(!('Notification'in window)||Notification.permission
 $('export').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(shoes,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sneaker-tracker-data.json';a.click();URL.revokeObjectURL(a.href)});
 $('import').addEventListener('change',async e=>{try{const data=JSON.parse(await e.target.files[0].text());if(!Array.isArray(data))throw Error();shoes=data;save();alert('読み込みました')}catch{alert('JSONデータを読み込めませんでした')}});
 if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
-render();checkDeadlines();setInterval(checkDeadlines,60000);
+async function loadFeed(){
+ const target=$('feedList');target.innerHTML='<div class="empty">読み込み中…</div>';
+ try{
+  const res=await fetch('./data/news.json?t='+Date.now(),{cache:'no-store'});if(!res.ok)throw Error('データがまだありません');
+  const feed=await res.json();const items=Array.isArray(feed.items)?feed.items:[];
+  $('feedUpdated').textContent=feed.updated_at?'更新：'+new Date(feed.updated_at).toLocaleString('ja-JP'):'';
+  target.innerHTML=items.length?items.map(x=>`<article class="shoe"><span class="pill">${esc(x.category||'発売ニュース')}</span><h3>${esc(x.title)}</h3><div class="note">${esc(x.published||'')} · ${esc(x.source||'ニュース')}</div><div class="actions"><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">元記事を確認 ↗</a></div></article>`).join(''):'<div class="empty">まだ取得した記事がありません。</div>';
+ }catch{target.innerHTML='<div class="empty">自動取得データがまだありません。GitHub Actionsを有効にして更新してください。</div>'}
+}
+$('refreshFeed').addEventListener('click',loadFeed);
+render();loadFeed();checkDeadlines();setInterval(checkDeadlines,60000);
 </script>
 </body></html>

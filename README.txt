@@ -1,29 +1,9 @@
-SNEAKER TRACKER - NIKE向けPWA試作版
+SNEAKER TRACKER — 自動ニュース収集版
 
-■ 起動方法
-1. このZIPを解凍します。
-2. HTTPS対応の静的ホスティング（例：GitHub Pages等）にフォルダ内のファイルを配置します。
-3. 発行されたURLをiPhoneのSafariまたはPCのブラウザで開きます。
-4. iPhoneは共有ボタン→「ホーム画面に追加」。PCはブラウザのインストール機能を使います。
+GitHub Pagesにファイルを配置し、GitHub Actionsを有効化すると約6時間おきにGoogle Newsの公開RSSからNIKE関連の発売・抽選ニュース見出しを収集します。
 
-ローカルで確認する場合：
-フォルダでターミナルを開き、python -m http.server 8000 を実行し、
-http://localhost:8000 を開いてください。
+導入：ZIP内の sneaker_tracker フォルダの「中身」をリポジトリのルートにアップロード。隠しフォルダ .github/workflows/update-news.yml と scripts/update_news.py と data/news.json も必要です。GitHub Actions > Update sneaker news > Run workflow を一度実行。Settings > Actions > General > Workflow permissions で Read and write permissions が必要な場合があります。GitHub Pagesはmain/(root)を選択。
 
-■ 現在できること
-・スニーカー情報の追加、検索、発売日順/名前順/相場順の並び替え
-・発売予定/抽選締切あり/お気に入りの絞り込み
-・抽選URLを登録して開く
-・参考相場と定価の記録
-・ブラウザ内への保存、JSON書き出し/読み込み
-・通知許可後、アプリを開いている間の締切チェック
-・PWAとしてホーム画面に追加、基本的なオフラインキャッシュ
+注意：ニュース見出しと元記事へのリンクを自動表示する機能です。発売日、抽選受付開始・締切、応募資格の確定情報ではありません。各販売元で必ず確認してください。公式NIKE/SNKRSの非公開APIは使用していません。Google News RSSの仕様変更やアクセス制限により更新できないことがあります。GitHub Actionsの実行間隔は保証されません。
 
-■ まだ実装していないこと
-・NIKEや販売店からの発売情報の自動収集
-・StockX等の相場の自動取得
-・アプリを閉じている間のプッシュ通知
-・複数端末間のクラウド同期
-
-これらには、利用規約に沿ったデータ提供元/API、バックエンド、定期実行、プッシュ通知、クラウドDBの設定が必要です。
-この試作版はNIKE公式情報を自動取得したり、実在の発売予定を捏造したりしません。
+手動登録したデータはブラウザのlocalStorageに保存されます。複数端末間の同期、プレ値自動取得、バックグラウンドの締切通知は未対応です。
